@@ -32,6 +32,7 @@ jobs:
             -not -path "*/.git/*" \
             -not -path "*/node_modules/*" \
             -not -path "*/dist/*" \
+            -not -path "*/vendor/*" \
             | while read -r f; do
               python3 -c "import yaml, pathlib; yaml.safe_load(pathlib.Path('$f').read_text())" \
                 && echo "OK: $f" \
@@ -44,7 +45,7 @@ jobs:
           # Extend this list as needed for your project.
           if grep -rn \
             --include="*.yml" --include="*.yaml" --include="*.json" \
-            --exclude-dir=".git" --exclude-dir="node_modules" --exclude-dir="dist" \
+            --exclude-dir=".git" --exclude-dir="node_modules" --exclude-dir="dist" --exclude-dir="vendor" \
             --exclude="package-lock.json" --exclude="pnpm-lock.yaml" --exclude="yarn.lock" \
             -E "(password|secret|api_key|token)\s*[:=]\s*['\"]?[A-Za-z0-9+/]{20,}" \
             .; then
