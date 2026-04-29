@@ -15,7 +15,7 @@ These instructions apply to all files in this repository and supplement the guid
 
 ## Naming Conventions
 
-- **Variables and functions**: `camelCase` (JavaScript/TypeScript) or `snake_case` (Python/Go/Rust)
+- **Variables and functions**: `camelCase` (JavaScript/TypeScript/Go), `snake_case` (Python/Rust)
 - **Classes and types**: `PascalCase`
 - **Constants**: `UPPER_SNAKE_CASE`
 - **Files**: `kebab-case` for most files; match language conventions for source files
@@ -31,6 +31,6 @@ Example: `"Missing required environment variable DATABASE_URL — set it in .env
 
 ## Comments
 
-- Avoid restating what the code does — explain *why* non-obvious decisions were made.
+- Avoid restating what the code does — explain _why_ non-obvious decisions were made.
 - Use `TODO(username):` and `FIXME(username):` prefixes for outstanding work items.
 - Keep comments up to date when code changes.
