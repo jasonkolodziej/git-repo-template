@@ -7,6 +7,7 @@
 
 ```jsonl
  {
+    // ~/.copilot/mcp-config.json || on github repo
    "mcpServers": {
      "github-mcp-server": {
        "type": "http",
@@ -19,16 +20,14 @@
          "X-MCP-Toolsets": "repos,issues,users,pull_requests,code_security,secret_protection,actions,web_search"
        }
      },
-		"io.github.upstash/context7": {
-			"type": "stdio",
-			"command": "npx",
-			"args": ["@upstash/context7-mcp@1.0.31"],
-			"env": {
-				"CONTEXT7_API_KEY": "$COPILOT_MCP_CONTEXT7_API_KEY"
-			},
-			"gallery": "https://api.mcp.github.com",
-			"version": "1.0.31"
-		},
+        "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "COPILOT_MCP_CONTEXT7_API_KEY"
+      },
+      "tools": ["query-docs", "resolve-library-id"]
+    }
    }
  }
 ```
