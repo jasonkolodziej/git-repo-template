@@ -3,11 +3,16 @@
 > [!TIP]
 > This [guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers#_quickstart-use-an-mcp-server-in-chat) provides the necessary configuration for using MCP, via [`.vscode/mcp.json`](./mcp.json) in Visual Studio Code with GitHub Copilot.
 
-## MCP Config for `github.com`
+## MCP Config for cloud agent on `github.com`
+
 > [!NOTE]
-> see: `https://github.com/<ORG>/<REPO>/settings/copilot/coding_agent`
->
-> [Documentation:](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/extend-cloud-agent-with-mcp)
+> With MCP, you can extend the capabilities of Copilot cloud agent by connecting it to other tools and services. The GitHub and Playwright MCP servers are enabled by default.
+
+> [!TIP] 
+> You can configure your own MCP servers by adding JSON configuration [here in `<org>/<repo>/settings`](`https://github.com/<ORG>/<REPO>/settings/copilot/coding_agent`). MCP servers can optionally access secrets defined in the repository's copilot environment.
+> [Learn more on cloud agent configuration](https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/extend-cloud-agent-with-mcp)
+
+## Example MCP Config
 
 ```jsonl
  {
