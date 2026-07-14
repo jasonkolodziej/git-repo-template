@@ -1,5 +1,9 @@
-# MCP
+# Managing MCPs
 
+> [!TIP]
+> This [guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers#_quickstart-use-an-mcp-server-in-chat) provides the necessary configuration for using MCP, via [`.vscode/mcp.json`](./mcp.json) in Visual Studio Code with GitHub Copilot.
+
+## MCP Config for `github.com`
 > [!NOTE]
 > see: `https://github.com/<ORG>/<REPO>/settings/copilot/coding_agent`
 >

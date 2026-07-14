@@ -5,16 +5,41 @@ description: Comprehensive Svelte 5 and SvelteKit development guidance. Use this
 
 This skill provides guidance for Svelte 5 and SvelteKit development, covering runes, component patterns, routing, and common pitfalls.
 
+## JavaScript and TypeScript Equivalents
+
+Use both styles when sharing examples:
+
+- Prefer paired examples labeled **JavaScript** and **TypeScript**.
+- For Svelte components, use `<script>` for JavaScript and `<script lang="ts">` for TypeScript.
+- For SvelteKit modules, pair `+page.js` with `+page.ts`, `+page.server.js` with `+page.server.ts`, etc.
+- Keep behavior identical across both variants; only type annotations and file extensions should differ.
+
 ## Svelte 5 Runes - Core Reactivity
 
 ### $state - Reactive State
 
 Creates reactive state that updates the UI when changed.
 
+**JavaScript**:
+
 ```svelte
 <script>
 	let count = $state(0);
 	let user = $state({ name: 'Alice', age: 30 });
+</script>
+
+<button onclick={() => count++}>Clicks: {count}</button>
+<button onclick={() => user.age++}>Age: {user.age}</button>
+```
+
+**TypeScript**:
+
+```svelte
+<script lang="ts">
+	type User = { name: string; age: number };
+
+	let count = $state<number>(0);
+	let user = $state<User>({ name: 'Alice', age: 30 });
 </script>
 
 <button onclick={() => count++}>Clicks: {count}</button>
@@ -29,6 +54,14 @@ todos[0].done = true; // triggers update
 todos.push({ done: false, text: "build app" }); // triggers update
 ```
 
+```ts
+type TodoItem = { done: boolean; text: string };
+
+let todos = $state<TodoItem[]>([{ done: false, text: "learn svelte" }]);
+todos[0].done = true; // triggers update
+todos.push({ done: false, text: "build app" }); // triggers update
+```
+
 **Classes**: Use $state in class fields:
 
 ```js
@@ -37,6 +70,22 @@ class Todo {
   constructor(text) {
     this.text = $state(text);
   }
+  reset = () => {
+    this.text = "";
+    this.done = false;
+  };
+}
+```
+
+```ts
+class Todo {
+  done = $state(false);
+  text;
+
+  constructor(text: string) {
+    this.text = $state(text);
+  }
+
   reset = () => {
     this.text = "";
     this.done = false;
@@ -59,9 +108,17 @@ data.large = "new value"; // no effect, must reassign entire object
 data = { large: "new value" }; // this works
 ```
 
+```ts
+let data = $state.raw<{ large: string }>({ large: "dataset" });
+data.large = "new value"; // no effect, must reassign entire object
+data = { large: "new value" }; // this works
+```
+
 ### $derived - Computed Values
 
 Creates values that automatically update when dependencies change.
+
+**JavaScript**:
 
 ```svelte
 <script>
@@ -74,10 +131,32 @@ Creates values that automatically update when dependencies change.
 <p>{count} × 3 = {tripled}</p>
 ```
 
+**TypeScript**:
+
+```svelte
+<script lang="ts">
+	let count = $state<number>(0);
+	let doubled = $derived(count * 2);
+	let tripled = $derived(count * 3);
+</script>
+
+<p>{count} × 2 = {doubled}</p>
+<p>{count} × 3 = {tripled}</p>
+```
+
 **For complex logic, use $derived.by**:
 
 ```js
 let numbers = $state([1, 2, 3]);
+let total = $derived.by(() => {
+  let sum = 0;
+  for (const n of numbers) sum += n;
+  return sum;
+});
+```
+
+```ts
+let numbers = $state<number[]>([1, 2, 3]);
 let total = $derived.by(() => {
   let sum = 0;
   for (const n of numbers) sum += n;
@@ -102,9 +181,24 @@ async function onclick() {
 }
 ```
 
+```ts
+let likes = $derived(post.likes);
+
+async function onclick(): Promise<void> {
+  likes += 1; // optimistic update
+  try {
+    await likePost();
+  } catch {
+    likes -= 1; // rollback on error
+  }
+}
+```
+
 ### $effect - Side Effects
 
 Runs when state changes. Use for DOM manipulation, third-party libraries, analytics.
+
+**JavaScript**:
 
 ```svelte
 <script>
@@ -115,6 +209,25 @@ Runs when state changes. Use for DOM manipulation, third-party libraries, analyt
 		const ctx = canvas.getContext('2d');
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		// reruns when `size` changes
+		ctx.fillRect(0, 0, size, size);
+	});
+</script>
+
+<canvas bind:this={canvas} width="100" height="100"></canvas>
+```
+
+**TypeScript**:
+
+```svelte
+<script lang="ts">
+	let size = $state<number>(50);
+	let canvas = $state<HTMLCanvasElement | null>(null);
+
+	$effect(() => {
+		if (!canvas) return;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.fillRect(0, 0, size, size);
 	});
 </script>
@@ -195,6 +308,23 @@ Receives data from parent components.
 <p>{message} - {count}</p>
 ```
 
+```svelte
+<!-- Parent.svelte -->
+<Child message="hello" count={42} />
+
+<!-- Child.svelte -->
+<script lang="ts">
+	interface Props {
+		message: string;
+		count?: number;
+	}
+
+	let { message, count = 0 }: Props = $props();
+</script>
+
+<p>{message} - {count}</p>
+```
+
 **Renaming props** (for reserved words or invalid identifiers):
 
 ```js
@@ -227,6 +357,8 @@ let { a, b, ...others } = $props();
 
 Allows child components to update parent state.
 
+**JavaScript**:
+
 ```svelte
 <!-- FancyInput.svelte -->
 <script>
@@ -239,6 +371,31 @@ Allows child components to update parent state.
 <script>
 	import FancyInput from './FancyInput.svelte';
 	let message = $state('hello');
+</script>
+
+<FancyInput bind:value={message} />
+<p>{message}</p>
+```
+
+**TypeScript**:
+
+```svelte
+<!-- FancyInput.svelte -->
+<script lang="ts">
+	type InputProps = {
+		value?: string;
+		placeholder?: string;
+	};
+
+	let { value = $bindable(''), ...props }: InputProps = $props();
+</script>
+
+<input bind:value {...props} />
+
+<!-- Parent.svelte -->
+<script lang="ts">
+	import FancyInput from './FancyInput.svelte';
+	let message = $state<string>('hello');
 </script>
 
 <FancyInput bind:value={message} />
@@ -348,7 +505,7 @@ Example: `src/routes/blog/[slug]/+page.svelte` matches `/blog/hello-world`
 
 ### Loading Data
 
-**Page Load** (`+page.js` or `+page.server.js`):
+**Page Load (JavaScript)** (`+page.js` or `+page.server.js`):
 
 ```js
 /** @type {import('./$types').PageLoad} */
@@ -362,7 +519,22 @@ export function load({ params, url, fetch }) {
 }
 ```
 
-**Layout Load** (`+layout.server.js`):
+**Page Load (TypeScript)** (`+page.ts` or `+page.server.ts`):
+
+```ts
+import type { PageLoad } from "./$types";
+
+export const load: PageLoad = ({ params, url, fetch }) => {
+  return {
+    post: {
+      title: `Post ${params.slug}`,
+      content: "Content here",
+    },
+  };
+};
+```
+
+**Layout Load (JavaScript)** (`+layout.server.js`):
 
 ```js
 /** @type {import('./$types').LayoutServerLoad} */
@@ -376,6 +548,21 @@ export async function load() {
 }
 ```
 
+**Layout Load (TypeScript)** (`+layout.server.ts`):
+
+```ts
+import type { LayoutServerLoad } from "./$types";
+
+export const load: LayoutServerLoad = async () => {
+  return {
+    sections: [
+      { slug: "profile", title: "Profile" },
+      { slug: "settings", title: "Settings" },
+    ],
+  };
+};
+```
+
 **Accessing Data in Components**:
 
 ```svelte
@@ -387,13 +574,24 @@ export async function load() {
 <h1>{data.post.title}</h1>
 ```
 
-**Parent Data Access**:
+**Parent Data Access (JavaScript)**:
 
 ```js
 export async function load({ parent }) {
   const { user } = await parent();
   return { username: user.name };
 }
+```
+
+**Parent Data Access (TypeScript)**:
+
+```ts
+import type { PageLoad } from "./$types";
+
+export const load: PageLoad = async ({ parent }) => {
+  const { user } = await parent();
+  return { username: user.name };
+};
 ```
 
 ### Universal vs Server Load
@@ -416,9 +614,25 @@ export async function load({ parent }) {
 
 ### Form Actions
 
+**JavaScript** (`+page.server.js`):
+
 ```js
-// +page.server.js
 export const actions = {
+  default: async ({ request }) => {
+    const data = await request.formData();
+    const email = data.get("email");
+    // process form...
+    return { success: true };
+  },
+};
+```
+
+**TypeScript** (`+page.server.ts`):
+
+```ts
+import type { Actions } from "./$types";
+
+export const actions: Actions = {
   default: async ({ request }) => {
     const data = await request.formData();
     const email = data.get("email");
@@ -447,7 +661,7 @@ export const actions = {
 
 ### Real-time Updates (Server-Sent Events)
 
-**Server** (`+server.js`):
+**Server (JavaScript)** (`+server.js`):
 
 ```js
 export function GET() {
@@ -471,7 +685,32 @@ export function GET() {
 }
 ```
 
-**Client**:
+**Server (TypeScript)** (`+server.ts`):
+
+```ts
+import type { RequestHandler } from "./$types";
+
+export const GET: RequestHandler = () => {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const encoder = new TextEncoder();
+      const send = (data: unknown) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
+      setInterval(() => send({ time: Date.now() }), 1000);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+    },
+  });
+};
+```
+
+**Client (JavaScript)**:
 
 ```svelte
 <script>
@@ -487,17 +726,41 @@ export function GET() {
 </script>
 ```
 
+**Client (TypeScript)**:
+
+```svelte
+<script lang="ts">
+	let data = $state<{ time: number }>({ time: 0 });
+
+	$effect(() => {
+		const source = new EventSource('/updates');
+		source.onmessage = (e: MessageEvent<string>) => {
+			data = JSON.parse(e.data) as { time: number };
+		};
+		return () => source.close();
+	});
+</script>
+```
+
 ## Environment Variables
 
-**Public** (exposed to client):
+**Public** (exposed to client, JavaScript and TypeScript):
 
 ```js
 import { PUBLIC_STATION_NAME } from "$env/static/public";
 ```
 
-**Private** (server-only):
+```ts
+import { PUBLIC_STATION_NAME } from "$env/static/public";
+```
+
+**Private** (server-only, JavaScript and TypeScript):
 
 ```js
+import { DATABASE_URL } from "$env/static/private";
+```
+
+```ts
 import { DATABASE_URL } from "$env/static/private";
 ```
 
@@ -577,7 +840,8 @@ Requires `experimental.async: true` in config:
 4. **Always provide keys in {#each} blocks** for dynamic lists
 5. **Prefer server load functions** for sensitive data
 6. **Use goto() for navigation** when remote functions are enabled
-7. **Type your components** with `PageProps`, `LayoutProps`, etc.
+7. **Provide JS and TS parity** in docs and snippets (same behavior, different typing)
+8. **Type your components** with `PageProps`, `LayoutProps`, etc.
 
 ## When to Consult External Resources
 
