@@ -15,6 +15,13 @@
         "Authorization": "Bearer ${input:cloudflare-api-token}"
       }
     },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "${input:context7-api-key}"
+      }
+    },
     "svelte": {
       "type": "http",
       "url": "https://mcp.svelte.dev/mcp"
@@ -57,6 +64,12 @@
       "type": "promptString",
       "id": "cloudflare-api-token",
       "description": "Cloudflare API Token for [CI/CD](https://dash.cloudflare.com/profile/api-tokens)",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "context7-api-key",
+      "description": "Context7 API Key",
       "password": true
     }
   ]
