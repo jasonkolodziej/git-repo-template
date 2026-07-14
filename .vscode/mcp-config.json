@@ -37,7 +37,7 @@
     "better-auth": {
       "type": "http",
       "tools": ["*"],
-      "url": "https://mcp.inkeep.com/better-auth/mcp"
+      "url": "https://mcp.better-auth.com/mcp"
     },
     "deepwiki": {
       "type": "http",
