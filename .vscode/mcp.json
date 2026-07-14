@@ -4,14 +4,33 @@
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/"
     },
-    "playwright": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@microsoft/mcp-server-playwright"]
+    "cloudflare-documentation": {
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-api": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:cloudflare-api-token}"
+      }
     },
     "svelte": {
       "type": "http",
       "url": "https://mcp.svelte.dev/mcp"
+    },
+    "better-auth": {
+      "type": "http",
+      "url": "https://mcp.inkeep.com/better-auth/mcp"
+    },
+    "deepwiki": {
+      "type": "http",
+      "url": "https://mcp.deepwiki.com/mcp"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@microsoft/mcp-server-playwright"]
     },
     "tailwindcss-server": {
       "type": "stdio",
@@ -23,23 +42,21 @@
       "command": "npx",
       "args": ["@jpisnice/shadcn-ui-mcp-server", "--framework", "svelte"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "COPILOT_MCP_SHADCN_SVELTE"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:shadcn-ui-gh-key}"
       }
-    },
-    "better-auth": {
-      "type": "http",
-      "url": "https://mcp.inkeep.com/better-auth/mcp"
-    },
-    "deepwiki": {
-      "type": "http",
-      "url": "https://mcp.deepwiki.com/mcp"
     }
   },
   "inputs": [
     {
       "type": "promptString",
-      "id": "perplexity-key",
-      "description": "Perplexity API Key",
+      "id": "shadcn-ui-gh-key",
+      "description": "GitHub Personal Access Token for Shadcn UI MCP",
+      "password": true
+    },
+    {
+      "type": "promptString",
+      "id": "cloudflare-api-token",
+      "description": "Cloudflare API Token for [CI/CD](https://dash.cloudflare.com/profile/api-tokens)",
       "password": true
     }
   ]

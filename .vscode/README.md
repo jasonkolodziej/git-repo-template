@@ -3,6 +3,9 @@
 > [!TIP]
 > This [guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers#_quickstart-use-an-mcp-server-in-chat) provides the necessary configuration for using MCP, via [`.vscode/mcp.json`](./mcp.json) in Visual Studio Code with GitHub Copilot.
 
+> [!IMPORTANT]
+> Read configuration documentation for [Cloudflare MCP Servers](https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/)
+
 ## MCP Config for cloud agent on `github.com`
 
 > [!NOTE]
