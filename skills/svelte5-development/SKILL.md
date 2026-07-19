@@ -13,6 +13,7 @@ For detailed code examples, see:
 
 - [references/runes.md](references/runes.md) — in-depth rune examples with JS + TS variants
 - [references/sveltekit.md](references/sveltekit.md) — SvelteKit routing, loading, forms, SSE, env vars
+- [references/runtime-warnings.md](references/runtime-warnings.md) — every Svelte 5 runtime warning with ❌/✅ before-after fixes
 
 ## JavaScript and TypeScript Equivalents
 
@@ -184,15 +185,15 @@ When using SvelteKit's `remoteFunctions` feature, standard `<a href>` links don'
 
 ### File Structure
 
-| File | Purpose |
-|------|---------|
-| `+page.svelte` | Page component |
-| `+page.js` | Universal load (runs server + client) |
-| `+page.server.js` | Server-only load |
-| `+layout.svelte` | Layout component (wraps pages) |
-| `+layout.js` / `+layout.server.js` | Layout load functions |
-| `+error.svelte` | Error page |
-| `+server.js` | API endpoints |
+| File                               | Purpose                               |
+| ---------------------------------- | ------------------------------------- |
+| `+page.svelte`                     | Page component                        |
+| `+page.js`                         | Universal load (runs server + client) |
+| `+page.server.js`                  | Server-only load                      |
+| `+layout.svelte`                   | Layout component (wraps pages)        |
+| `+layout.js` / `+layout.server.js` | Layout load functions                 |
+| `+error.svelte`                    | Error page                            |
+| `+server.js`                       | API endpoints                         |
 
 **Dynamic route segments**: `[slug]`, `[...rest]`, `[[optional]]`
 
@@ -203,6 +204,17 @@ For complete load function examples, form actions, server-sent events, and envir
 
 - **`+page.js`** — public APIs, no secrets, custom class returns, shared server/client logic
 - **`+page.server.js`** — database, private env vars, filesystem, must return serializable data
+
+## Runtime Warnings
+
+When a Svelte 5 runtime warning appears, identify the warning code and look it up in
+[references/runtime-warnings.md](references/runtime-warnings.md). Common ones to know:
+
+- **`derived_inert`** — `$derived` created inside `$effect`; move it to top level
+- **`ownership_invalid_mutation`** — child mutating a prop without `$bindable`; use `$bindable()` or callbacks
+- **`console_log_state`** — `console.log($state proxy)`; use `$inspect(...)` or `$state.snapshot(...)`
+- **`await_reactivity_loss`** — state read after `await` inside a function; pass as arguments instead
+- **`hydration_mismatch`** — SSR/CSR DOM differs; keep structure identical, toggle content after `onMount`
 
 ## Best Practices
 
