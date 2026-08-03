@@ -12,12 +12,6 @@
 
   // --- agent chat ---
   "chat.mcp.autostart": "newAndOutdated",
-  "chat.mcp.discovery.enabled": {
-    "claude-desktop": false,
-    "windsurf": false,
-    "cursor-global": false,
-    "cursor-workspace": false
-  },
 
   // --- Language overrides ---
   "[json]": {
