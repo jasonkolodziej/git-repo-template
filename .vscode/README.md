@@ -5,6 +5,7 @@
 
 > [!IMPORTANT]
 > Read configuration documentation for [Cloudflare MCP Servers](https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/)
+> Per [Github documentation](https://github.com/cloudflare/mcp#option-2-api-token), Both user tokens and account tokens are supported. For account tokens, include the Account Resources : Read permission so the server can auto-detect your account ID.
 
 ## MCP Config for cloud agent on `github.com`
 

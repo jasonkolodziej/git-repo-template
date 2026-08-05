@@ -43,3 +43,19 @@ Agents load skills through **progressive disclosure**, in three stages:
 3. **Execution**: The agent follows the instructions, optionally executing bundled code or loading referenced files as needed.
 
 Full instructions load only when a task calls for them, so agents can keep many skills on hand with only a small context footprint.
+
+## Modifying Template Repo
+
+The standard approach for template repos is a GitHub Actions setup workflow that triggers on the first push to the default branch, skips if running in the template repo itself, performs the substitutions, commits the result, then deletes itself.
+
+The flow:
+
+1. New repo created from template → GitHub creates an initial commit
+2. The bundled [setup.yml](.github/workflows/setup.yml) workflow fires on that push
+3. It detects it's not the template repo (via github.repository check)
+   1. Trigger: `push` to `main` — GitHub fires this automatically when the new repo receives its first commit after being created from the template.
+   2. Guard (`if: github.repository != 'jasonkolodziej/git-repo-template'`): prevents the workflow from running inside the template repo itself on every push.
+4. Replaces the `# git-repo-template` header (and any other placeholders) with the actual repo name
+5. Commits back and self-deletes so it never runs again.
+   1. **Self-deletion:** after committing the substitutions, the workflow git rms itself and pushes — so it never runs again in the child repo. The child repo's CI (ci.yml) takes over from that point.
+   2. **Extending it:** add more `sed` / `find` lines in the Replace template placeholders step for any other tokens you want to swap out (e.g., owner name, year, license holder).
