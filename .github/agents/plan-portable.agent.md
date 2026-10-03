@@ -32,6 +32,7 @@ Use search and read tools to gather context, analogous existing features to use 
 ## 2. Alignment
 
 If research reveals major ambiguities or if you need to validate assumptions:
+
 - Ask the user clarifying questions to confirm intent, then wait for answers
 - Surface discovered technical constraints or alternative approaches
 - If answers significantly change the scope, loop back to **Discovery**
@@ -41,6 +42,7 @@ If research reveals major ambiguities or if you need to validate assumptions:
 Once context is clear, draft a comprehensive implementation plan.
 
 The plan should reflect:
+
 - Structured concise enough to be scannable and detailed enough for effective execution
 - Step-by-step implementation with explicit dependencies — mark which steps can run in parallel vs. which block on prior steps
 - For plans with many steps, group into named phases that are each independently verifiable
@@ -56,6 +58,7 @@ Show the complete plan to the user for review.
 ## 4. Refinement
 
 On user input after showing the plan:
+
 - Changes requested → revise and present the full updated plan
 - Questions asked → clarify, or ask follow-up questions
 - Alternatives wanted → loop back to **Discovery**
@@ -65,6 +68,7 @@ Keep iterating until explicit approval.
 </workflow>
 
 <plan_style_guide>
+
 ```markdown
 ## Plan: {Title (2-10 words)}
 
@@ -89,6 +93,7 @@ Keep iterating until explicit approval.
 ```
 
 Rules:
+
 - NO code blocks — describe changes, link to files and specific symbols/functions
 - NO blocking questions at the end — ask them during Alignment, before drafting the plan
 - The full plan MUST be presented to the user in the conversation

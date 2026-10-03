@@ -12,10 +12,11 @@ and repeatable workflows in `.claude/skills/`.
 <!-- TODO: list the top-level directories and what lives in each -->
 
 ## Commands
+
 Use the `run-checks` skill before finishing any change. The commands match CI exactly.
 
 | Task | Python (uv) | Node (pnpm) |
-|---|---|---|
+| --- | --- | --- |
 | Install | `uv sync` | `pnpm install` |
 | Lint | `uvx ruff check .` | `pnpm run lint` |
 | Format check | `uvx ruff format --check .` | `pnpm run format:check` |
@@ -23,11 +24,13 @@ Use the `run-checks` skill before finishing any change. The commands match CI ex
 | Test | `uv run pytest` | `pnpm run test` |
 
 ## Conventions
+
 See `.github/copilot-instructions.md` (Conventional Commits, testing, security) and
 `.github/instructions/general.instructions.md` (style, naming).
 <!-- TODO: project-specific additions -->
 
 ## Agent rules
+
 - Never commit secrets or files matching `.env*`.
 - Do not change CI workflows, `copilot-setup-steps.yml`, or agent/skill files unless the task asks for it.
 - If you cannot ask the user a question (non-interactive or cloud run), state your assumptions explicitly in your summary or PR description and proceed with the most conservative option.
