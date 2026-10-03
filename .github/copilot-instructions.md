@@ -2,9 +2,13 @@
 
 This file provides repository-wide custom instructions for GitHub Copilot across all agents (VS Code inline, Copilot Chat, CLI, and cloud agents).
 
+<!-- TEMPLATE-ONLY:START -->
 ## Repository Purpose
 
 This is a **GitHub repository template** designed to provide a consistent, best-practice starting point for new projects. It includes Copilot configuration, CI/CD workflows, VS Code workspace settings, and reusable agent skills/prompts.
+
+<!-- TEMPLATE-ONLY:END -->
+Project overview, layout, and commands live in `AGENTS.md`.
 
 ## Coding Guidelines
 

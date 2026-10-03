@@ -1,6 +1,12 @@
 # git-repo-template
 
-GitHub repo template setup for all git-repos
+<!-- TEMPLATE-ONLY:START -->
+GitHub repo template setup for all git-repos.
+
+> Sections wrapped in `TEMPLATE-ONLY` markers (like this one) are removed by
+> `.github/workflows/setup.yml` in repos created from this template.
+<!-- TEMPLATE-ONLY:END -->
+<!-- REPO_DESCRIPTION -->
 
 ## Included CI Checks
 
@@ -19,7 +25,7 @@ Scaffolding that works across the VS Code **Local** harness, the VS Code **Copil
 **Copilot cloud agent**, Copilot CLI, and Claude Code.
 
 | Path | Purpose | Read by |
-|---|---|---|
+| --- | --- | --- |
 | `AGENTS.md` | Canonical project instructions | Local, Copilot, Cloud, CLI |
 | `CLAUDE.md` | Imports `AGENTS.md` | Claude Code |
 | `.github/copilot-instructions.md` | Repo-wide Copilot instructions | Local, Copilot, Cloud, CLI |
@@ -119,6 +125,7 @@ Agents load skills through **progressive disclosure**, in three stages:
 3. **Execution**: The agent follows the instructions, optionally executing bundled code or loading referenced files as needed.
 
 Full instructions load only when a task calls for them, so agents can keep many skills on hand with only a small context footprint.
+<!-- TEMPLATE-ONLY:START -->
 
 ## Modifying Template Repo
 
@@ -135,3 +142,10 @@ The flow:
 5. Commits back and self-deletes so it never runs again.
    1. **Self-deletion:** after committing the substitutions, the workflow git rms itself and pushes — so it never runs again in the child repo. The child repo's CI (ci.yml) takes over from that point.
    2. **Extending it:** add more `sed` / `find` lines in the Replace template placeholders step for any other tokens you want to swap out (e.g., owner name, year, license holder).
+6. **Template-only content:** wrap anything that describes this template (rather than the new repo) in
+   `<!-- TEMPLATE-ONLY:START -->` / `<!-- TEMPLATE-ONLY:END -->` in any `.md` file; the workflow deletes it.
+7. **Description:** the `<!-- REPO_DESCRIPTION -->` line under the README title is replaced with the new
+   repo's GitHub description (or a TODO if it has none).
+8. **If the self-delete is refused** (`GITHUB_TOKEN` may not be allowed to change `.github/workflows/`),
+   the substitutions are still pushed and later runs are no-ops; delete `setup.yml` by hand.
+<!-- TEMPLATE-ONLY:END -->
