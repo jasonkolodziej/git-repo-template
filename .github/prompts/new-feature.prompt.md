@@ -1,5 +1,5 @@
 ---
-mode: "agent"
+agent: "agent"
 description: "Scaffold a new feature: create the implementation file, a corresponding test file, and update the README if needed."
 ---
 

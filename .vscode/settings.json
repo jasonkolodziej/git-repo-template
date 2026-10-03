@@ -26,6 +26,9 @@
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
   "[markdown]": {
     "editor.wordWrap": "on",
     "editor.quickSuggestions": {
@@ -52,6 +55,12 @@
   "git.enableSmartCommit": true,
   "git.autofetch": true,
   "git.confirmSync": false,
+  // Copilot-harness worktree sessions start from committed state; copy these ignored files in.
+  // Unverified setting names/value shape — confirm in the Settings UI (see README).
+  "git.worktreeIncludeFiles": ["**/.env", "**/.env.local"],
+  // Experimental: symlink heavy ignored folders instead of reinstalling.
+  // Do NOT add .venv: an editable install inside it points at the original checkout.
+  "git.worktreeSymlinkFolders": ["node_modules"],
 
   // --- Files ---
   "files.exclude": {
