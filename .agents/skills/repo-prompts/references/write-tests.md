@@ -1,8 +1,8 @@
 ---
-mode: "agent"
+name: write-tests
 description: "Generate a comprehensive test suite for the selected code, covering unit tests, edge cases, and error paths."
+disable-model-invocation: true
 ---
-
 # Write Tests
 
 Generate a comprehensive test suite for the code provided below. Follow all guidelines in `.github/copilot-instructions.md`.

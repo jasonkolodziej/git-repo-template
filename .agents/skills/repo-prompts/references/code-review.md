@@ -1,8 +1,8 @@
 ---
-mode: "agent"
+name: code-review
 description: "Perform a thorough code review of the selected code or a pull request diff, checking for correctness, security, style, and test coverage."
+disable-model-invocation: true
 ---
-
 # Code Review
 
 Review the code provided below (or the currently open file/diff) and produce structured feedback. Follow the guidelines in `.github/copilot-instructions.md`.

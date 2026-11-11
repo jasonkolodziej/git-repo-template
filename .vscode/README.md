@@ -44,3 +44,7 @@
    }
  }
 ```
+
+> [!IMPORTANT]
+> When migrating from VS Code MCP config, do not copy `${input:...}` placeholders directly. Use environment-backed values instead, for example `${COPILOT_MCP_CONTEXT7_API_KEY}`, `${COPILOT_MCP_SHADCN_SVELTE}`, or `${COPILOT_MCP_CLOUDFLARE_API_TOKEN}`. Keep the original `.vscode/mcp.json` until the migrated config is validated in the selected Agent Host and cleanup is explicitly approved.
+
