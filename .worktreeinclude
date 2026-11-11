@@ -1,0 +1,3 @@
+# Ignored files Claude Code copies into new worktrees (same intent as git.worktreeIncludeFiles)
+.env
+.env.local

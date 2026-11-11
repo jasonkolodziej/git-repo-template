@@ -1,5 +1,5 @@
 ---
-mode: "agent"
+agent: "agent"
 description: "Perform a thorough code review of the selected code or a pull request diff, checking for correctness, security, style, and test coverage."
 ---
 

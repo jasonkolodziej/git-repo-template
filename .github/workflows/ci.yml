@@ -53,3 +53,62 @@ jobs:
             exit 1
           fi
           echo "No secret patterns found."
+
+  # hashFiles() is not allowed in a job-level `if`, so detect the stacks in a
+  # step and gate the language jobs on its outputs.
+  detect:
+    name: Detect stacks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      python: ${{ steps.stacks.outputs.python }}
+      node: ${{ steps.stacks.outputs.node }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Look for pyproject.toml / package.json
+        id: stacks
+        run: |
+          echo "python=$([ -f pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "node=$([ -f package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  # Keep the commands below in sync with .claude/skills/run-checks/SKILL.md.
+  python:
+    name: Python (uv)
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: uvx ruff check .
+      - run: uvx ruff format --check .
+      - name: Tests
+        run: |
+          if [ -d tests ]; then uv run pytest -q; else echo "No tests/ directory; skipping"; fi
+
+  node:
+    name: Node (pnpm)
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Reads the pnpm version from package.json's `packageManager` field.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run --if-present lint
+      - run: pnpm run --if-present format:check
+      - run: pnpm run --if-present check
+      - run: pnpm run --if-present test

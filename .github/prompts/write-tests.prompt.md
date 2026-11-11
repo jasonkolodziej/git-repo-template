@@ -1,5 +1,5 @@
 ---
-mode: "agent"
+agent: "agent"
 description: "Generate a comprehensive test suite for the selected code, covering unit tests, edge cases, and error paths."
 ---
 
