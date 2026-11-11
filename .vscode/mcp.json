@@ -12,7 +12,7 @@
       "type": "http",
       "url": "https://mcp.cloudflare.com/mcp",
       "headers": {
-        "Authorization": "Bearer ${input:cloudflare-api-token}"
+        "Authorization": "${input:cloudflare-api-token}"
       }
     },
     "context7": {
