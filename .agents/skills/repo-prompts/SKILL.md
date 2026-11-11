@@ -2,6 +2,7 @@
 name: repo-prompts
 disable-model-invocation: true
 description: Consolidated repository prompt workflows for code review, feature scaffolding, and test generation. Use this skill when the user wants a repository-specific review, a new feature implementation plan, or a test suite for existing code.
+disable-model-invocation: true
 ---
 
 # Repository Prompt Pack
