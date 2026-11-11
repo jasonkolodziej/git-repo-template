@@ -162,15 +162,45 @@ if ! command -v "$graphify_bin" >/dev/null 2>&1; then
     die "graphify CLI not found. Install it with: pipx install graphifyy (or: uv tool install graphifyy, pip install graphifyy)"
 fi
 
-have_llm_backend() {
-    # GRAPHIFY_BACKEND=none disables every LLM step, even when keys are present.
-    [[ ${GRAPHIFY_BACKEND:-} == none ]] && return 1
-    [[ -n ${GRAPHIFY_BACKEND:-} ]] && return 0
+any_env_set() {
     local v
-    for v in ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY GOOGLE_API_KEY MOONSHOT_API_KEY DEEPSEEK_API_KEY; do
+    for v in "$@"; do
         [[ -n ${!v:-} ]] && return 0
     done
     return 1
+}
+
+# True when the URL's host is loopback (graphify only lets Ollama run keyless locally).
+is_local_url() {
+    local host=${1#*://}
+    host=${host%%/*}
+    host=${host##*@}
+    case $host in
+        \[::1\]* | localhost | localhost:* | 127.*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Mirrors graphify's own credential checks (graphify/llm.py BACKENDS + `extract`), so a
+# "full" target falls back to code-only instead of failing when its backend can't run.
+have_llm_backend() {
+    local backend=${GRAPHIFY_BACKEND:-}
+    case $backend in
+        none) return 1 ;; # disables every LLM step, even when keys are present
+        "") any_env_set ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY GOOGLE_API_KEY \
+            MOONSHOT_API_KEY DEEPSEEK_API_KEY ;;
+        claude) any_env_set ANTHROPIC_API_KEY ;;
+        openai) any_env_set OPENAI_API_KEY ;;
+        gemini) any_env_set GEMINI_API_KEY GOOGLE_API_KEY ;;
+        kimi) any_env_set MOONSHOT_API_KEY ;;
+        deepseek) any_env_set DEEPSEEK_API_KEY ;;
+        azure) any_env_set AZURE_OPENAI_API_KEY ;;
+        ollama) any_env_set OLLAMA_API_KEY || is_local_url "${OLLAMA_BASE_URL:-http://localhost:11434/v1}" ;;
+        bedrock) any_env_set AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_ACCESS_KEY_ID ;;
+        claude-cli) command -v claude >/dev/null 2>&1 ;;
+        # Custom providers (`graphify provider add`) declare their own key; let graphify check it.
+        *) return 0 ;;
+    esac
 }
 
 build_one() {
@@ -180,7 +210,7 @@ build_one() {
         return 1
     fi
     if [[ $mode == full ]] && ! have_llm_backend; then
-        warn "'$dir' wants full extraction but no LLM backend is available (no API key, or GRAPHIFY_BACKEND=none): falling back to code-only."
+        warn "'$dir' wants full extraction but backend '${GRAPHIFY_BACKEND:-auto-detect}' has no usable credentials (or is 'none'): falling back to code-only."
         mode=code-only
     fi
 
