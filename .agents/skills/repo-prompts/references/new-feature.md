@@ -1,8 +1,8 @@
 ---
-mode: "agent"
+name: new-feature
 description: "Scaffold a new feature: create the implementation file, a corresponding test file, and update the README if needed."
+disable-model-invocation: true
 ---
-
 # New Feature Scaffold
 
 Your task is to implement a new feature as described below. Follow all guidelines in `.github/copilot-instructions.md`.

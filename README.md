@@ -2,6 +2,10 @@
 
 GitHub repo template setup for all git-repos
 
+## Template model
+
+This template is intentionally aligned with the modern Visual Studio Code 1.146+ Copilot customization model: repository instructions, MCP servers, and reusable skills are the primary extension points. Legacy prompt files are not part of the active template surface because VS Code now prefers a skill-first model over prompt-centric workflow files.
+
 ## Included CI Checks
 
 The default GitHub Actions workflow in `.github/workflows/ci.yml` runs:

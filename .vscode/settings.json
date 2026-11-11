@@ -42,8 +42,7 @@
     "markdown": true,
     "scminput": false
   },
-  "chat.promptFiles": true,
-  //? https://code.visualstudio.com/docs/agent-customization/overview#_migrate-customizations
+  // VS Code 1.146+ favors skills and repository instructions over the legacy prompt-files model.
   "chat.instructionsFilesLocations": {
     ".github/instructions": true
   },
