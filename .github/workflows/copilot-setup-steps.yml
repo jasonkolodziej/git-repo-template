@@ -25,6 +25,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # graphify CLI + MCP server, so the cloud agent can query the committed
+      # knowledge graphs (see GRAPHIFY.md and .github/instructions/graphify.instructions.md).
+      - name: Set up Python for graphify
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install graphify
+        env:
+          GRAPHIFY_VERSION: ${{ vars.GRAPHIFY_VERSION }}
+        run: |
+          python -m pip install --disable-pip-version-check "graphifyy[mcp]${GRAPHIFY_VERSION:+==${GRAPHIFY_VERSION}}"
+          graphify --version
+
       # ---------------------------------------------------------------
       # Add project-specific setup steps below.
       # Examples: install Node.js, Python, Go, or other runtimes;

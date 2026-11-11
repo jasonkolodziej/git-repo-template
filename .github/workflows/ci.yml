@@ -46,6 +46,7 @@ jobs:
           if grep -rn \
             --include="*.yml" --include="*.yaml" --include="*.json" \
             --exclude-dir=".git" --exclude-dir="node_modules" --exclude-dir="dist" --exclude-dir="vendor" \
+            --exclude-dir="graphify-out" \
             --exclude="package-lock.json" --exclude="pnpm-lock.yaml" --exclude="yarn.lock" \
             -E "(password|secret|api_key|token)\s*[:=]\s*['\"]?[A-Za-z0-9+/]{20,}" \
             .; then

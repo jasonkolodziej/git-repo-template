@@ -9,6 +9,15 @@ The default GitHub Actions workflow in `.github/workflows/ci.yml` runs:
 - YAML validation for `.yml` and `.yaml` files (via PyYAML)
 - Basic secret-pattern scanning across YAML/JSON sources while excluding common generated/vendor paths
 
+## Knowledge Graphs (graphify)
+
+Selected directories are indexed into [graphify](https://github.com/Graphify-Labs/graphify) knowledge graphs
+(`<dir>/graphify-out/`) that Claude Code and GitHub Copilot (VS Code and cloud agent) query over MCP or the CLI,
+instead of grepping the whole tree. The graphs are rebuilt by `.github/workflows/graphify.yml` or by the
+`graphify: …` VS Code tasks.
+
+**After creating a repo from this template, follow [GRAPHIFY.md](GRAPHIFY.md).**
+
 ## What are Agent Skills?
 
 Agent Skills are a lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows.

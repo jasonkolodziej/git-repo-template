@@ -43,6 +43,12 @@
       "type": "http",
       "tools": ["*"],
       "url": "https://mcp.deepwiki.com/mcp"
+    },
+    "graphify-skills": {
+      "type": "local",
+      "command": "graphify-mcp",
+      "args": ["skills/graphify-out/graph.json"],
+      "tools": ["*"]
     }
   }
 }

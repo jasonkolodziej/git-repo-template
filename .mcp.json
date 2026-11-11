@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "graphify-skills": {
+      "type": "stdio",
+      "command": "graphify-mcp",
+      "args": ["skills/graphify-out/graph.json"]
+    }
+  }
+}
