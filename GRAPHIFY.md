@@ -89,6 +89,9 @@ pipx install "graphifyy[mcp,anthropic,openai,gemini]"
 bash .github/graphify/update.sh
 ```
 
+The script supports macOS's bundled Bash 3.2 and newer Bash versions. Run it directly from Bash or zsh;
+an explicit `zsh .github/graphify/update.sh` invocation automatically hands off to Bash.
+
 ```bash
 git add -- '*graphify-out/*' && git commit -m "chore(graphify): initial knowledge graphs"
 ```

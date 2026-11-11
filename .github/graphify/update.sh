@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Rebuild graphify knowledge graphs for the directories listed in .github/graphify/targets.txt.
 # Used by the VS Code tasks (manual) and by .github/workflows/graphify.yml (CI).
+if [ -n "${ZSH_VERSION:-}" ]; then
+    exec bash "$0" "$@"
+fi
 set -euo pipefail
 
 usage() {
@@ -125,7 +128,9 @@ if [[ ${#explicit_dirs[@]} -gt 0 ]]; then
         work+=("$d"$'\t'"$(configured_mode_for "$d")")
     done
 else
-    mapfile -t work < <(read_targets)
+    while IFS= read -r entry; do
+        work+=("$entry")
+    done < <(read_targets)
 fi
 
 if [[ -n $changed_ref ]]; then
