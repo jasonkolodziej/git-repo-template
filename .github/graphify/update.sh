@@ -198,9 +198,56 @@ have_llm_backend() {
         ollama) any_env_set OLLAMA_API_KEY || is_local_url "${OLLAMA_BASE_URL:-http://localhost:11434/v1}" ;;
         bedrock) any_env_set AWS_PROFILE AWS_REGION AWS_DEFAULT_REGION AWS_ACCESS_KEY_ID ;;
         claude-cli) command -v claude >/dev/null 2>&1 ;;
-        # Custom providers (`graphify provider add`) declare their own key; let graphify check it.
-        *) return 0 ;;
+        *) custom_provider_ready "$backend" ;;
     esac
+}
+
+# Prints the API-key env var names a custom provider (`graphify provider add`) declares.
+# Exit 0 = provider found; 2 = no such provider; 3 = python3 unavailable.
+# Reads the same files as graphify: ~/.graphify/providers.json, plus ./.graphify/providers.json
+# only when GRAPHIFY_ALLOW_LOCAL_PROVIDERS is truthy.
+custom_provider_env_keys() {
+    command -v python3 >/dev/null 2>&1 || return 3
+    python3 -I - "$1" <<'PY'
+import json, os, re, sys
+from pathlib import Path
+
+name = sys.argv[1]
+paths = [Path.home() / ".graphify" / "providers.json"]
+if os.environ.get("GRAPHIFY_ALLOW_LOCAL_PROVIDERS", "").strip().lower() in ("1", "true", "yes"):
+    paths.insert(0, Path(".graphify") / "providers.json")
+for path in paths:
+    try:
+        cfg = json.loads(path.read_text(encoding="utf-8")).get(name)
+    except (OSError, ValueError, AttributeError):
+        continue
+    if not isinstance(cfg, dict) or not str(cfg.get("base_url", "")).startswith(("http://", "https://")):
+        continue
+    keys = cfg.get("env_keys") or ([cfg["env_key"]] if cfg.get("env_key") else [])
+    for key in keys if isinstance(keys, list) else []:
+        if isinstance(key, str) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
+            print(key)
+    sys.exit(0)
+sys.exit(2)
+PY
+}
+
+custom_provider_ready() {
+    local name=$1 keys status=0
+    keys=$(custom_provider_env_keys "$name") || status=$?
+    case $status in
+        0) ;;
+        2) warn "GRAPHIFY_BACKEND='$name' is not a built-in backend or a configured custom provider (typo?)."
+           return 1 ;;
+        *) warn "cannot verify custom provider '$name' (python3 not found)."
+           return 1 ;;
+    esac
+    if [[ -z $keys ]]; then
+        warn "custom provider '$name' declares no env_key, so graphify cannot authenticate it."
+        return 1
+    fi
+    # shellcheck disable=SC2086 # one validated variable name per line
+    any_env_set $keys
 }
 
 build_one() {

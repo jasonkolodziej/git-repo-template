@@ -289,6 +289,7 @@ To try it:
 | `query` exits 3 | The name is ambiguous. Use one of the listed candidates. |
 | Workflow can't push | `main` is protected. See step 2. |
 | `full` target built as code-only | No API key secret is visible to the run. Fork PRs never get one, and run with `GRAPHIFY_BACKEND=none`. |
+| `GRAPHIFY_BACKEND='…' is not a built-in backend or a configured custom provider` | Fix the name, or define the provider with `graphify provider add`. In CI there is no `~/.graphify/providers.json`: commit `.graphify/providers.json`, set `GRAPHIFY_ALLOW_LOCAL_PROVIDERS=1` in the workflow `env`, and pass the provider's `env_key` secret. |
 | `the 'anthropic' package is required for this backend` | Install the matching extra: `pipx install --force "graphifyy[mcp,anthropic,openai,gemini]"`. |
 | Graph shrank after deleting files and the update was refused | Rebuild with `GRAPHIFY_FORCE=1`, e.g. `GRAPHIFY_FORCE=1 bash .github/graphify/update.sh <dir>`. |
 
