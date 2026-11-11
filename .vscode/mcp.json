@@ -51,6 +51,13 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:shadcn-ui-gh-key}"
       }
+    },
+    // One graphify server per graphed directory (see GRAPHIFY.md). Needs `graphify-mcp`
+    // on PATH: run the "graphify: install CLI" task first.
+    "graphify-skills": {
+      "type": "stdio",
+      "command": "graphify-mcp",
+      "args": ["${workspaceFolder}/skills/graphify-out/graph.json"]
     }
   },
   "inputs": [

@@ -143,5 +143,12 @@ vite.config.ts.timestamp-*
 .vite/
 .DS_Store
 
-# Graphify cache directory
-graphify-out/cache
+# graphify: per-machine caches. graph.json, GRAPH_REPORT.md and graph.html in each
+# <dir>/graphify-out/ are committed so every agent and CI job shares the same graph.
+**/graphify-out/cache/
+# Local GitHub Pages build (.github/graphify/build_site.py)
+_site/
+
+# Python bytecode (graphify helper scripts)
+__pycache__/
+*.py[cod]
