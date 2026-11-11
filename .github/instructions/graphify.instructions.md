@@ -25,8 +25,9 @@ Currently graphed: `skills/` → `skills/graphify-out/graph.json` (MCP server `g
 - Queries match node labels, so use symbol, file or concept names rather than whole sentences. Exit code 4 means
   no match (try other names); exit code 3 means ambiguous (pick from the listed candidates).
 - Read raw files only for lines the graph already located, or when modifying or debugging specific code.
-- After changing files in a graphed directory, run `bash .github/graphify/update.sh <dir>` if the CLI is
-  installed. Otherwise leave it: the Graphify workflow rebuilds changed directories on merge to `main`.
+- After changing files in a graphed directory, run `bash .github/graphify/update.sh <dir>` or
+  `zsh .github/graphify/update.sh <dir>` if the CLI is installed. Otherwise leave it: the Graphify workflow
+  rebuilds changed directories on merge to `main`.
 - Never hand-edit files under `graphify-out/`. A large diff to `graph.json` is expected after a rebuild; do not
   flag it as churn or suggest skipping the rebuild.
 - To graph a new directory, add it to `.github/graphify/targets.txt` and follow `GRAPHIFY.md`.

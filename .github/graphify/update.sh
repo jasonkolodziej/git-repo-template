@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Rebuild graphify knowledge graphs for the directories listed in .github/graphify/targets.txt.
 # Used by the VS Code tasks (manual) and by .github/workflows/graphify.yml (CI).
+if [[ -n ${ZSH_VERSION:-} ]]; then
+    exec bash "$0" "$@"
+fi
 set -euo pipefail
 
 usage() {
