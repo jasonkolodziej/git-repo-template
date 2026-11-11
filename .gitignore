@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 **/graphify-out/cache/
 # Local GitHub Pages build (.github/graphify/build_site.py)
 _site/
+
+# Python bytecode (graphify helper scripts)
+__pycache__/
+*.py[cod]
