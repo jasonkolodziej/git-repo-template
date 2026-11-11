@@ -131,8 +131,14 @@ fi
 if [[ -n $changed_ref ]]; then
     if git rev-parse --verify --quiet "${changed_ref}^{commit}" >/dev/null; then
         changed_files=$(git diff --name-only "$changed_ref" HEAD --)
+        # Ignore and config files can change a target's scope without touching any file
+        # beneath it (e.g. the root .graphifyignore), so treat them as invalidating all.
+        scope_changes=$(grep -E '(^|/)(\.graphifyignore|\.gitignore|\.graphifyrc[^/]*)$' <<<"$changed_files" \
+            | grep -vE '(^|/)graphify-out/' || true)
         if grep -qxF "$targets_file" <<<"$changed_files"; then
             echo "$targets_file changed: rebuilding every selected target."
+        elif [[ -n $scope_changes ]]; then
+            echo "ignore/config file(s) changed ($(tr '\n' ' ' <<<"$scope_changes")): rebuilding every selected target."
         else
             filtered=()
             for entry in "${work[@]}"; do
@@ -157,7 +163,9 @@ if ! command -v "$graphify_bin" >/dev/null 2>&1; then
 fi
 
 have_llm_backend() {
-    [[ -n ${GRAPHIFY_BACKEND:-} && ${GRAPHIFY_BACKEND} != none ]] && return 0
+    # GRAPHIFY_BACKEND=none disables every LLM step, even when keys are present.
+    [[ ${GRAPHIFY_BACKEND:-} == none ]] && return 1
+    [[ -n ${GRAPHIFY_BACKEND:-} ]] && return 0
     local v
     for v in ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY GOOGLE_API_KEY MOONSHOT_API_KEY DEEPSEEK_API_KEY; do
         [[ -n ${!v:-} ]] && return 0
@@ -172,7 +180,7 @@ build_one() {
         return 1
     fi
     if [[ $mode == full ]] && ! have_llm_backend; then
-        warn "'$dir' wants full extraction but no LLM API key is set: falling back to code-only."
+        warn "'$dir' wants full extraction but no LLM backend is available (no API key, or GRAPHIFY_BACKEND=none): falling back to code-only."
         mode=code-only
     fi
 

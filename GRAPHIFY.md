@@ -82,7 +82,7 @@ Either run **Actions → Graphify → Run workflow** (leave *targets* blank to b
 locally and commit the result:
 
 ```bash
-pipx install "graphifyy[mcp]"
+pipx install "graphifyy[mcp,anthropic,openai,gemini]"
 ```
 
 ```bash
@@ -137,7 +137,7 @@ Open **Terminal → Run Task…** and pick:
 
 | Task | What it does |
 | --- | --- |
-| `graphify: install CLI` | installs `graphify` + `graphify-mcp` with uv, pipx or pip |
+| `graphify: install CLI` | installs `graphify` + `graphify-mcp` (with watch mode and the Anthropic/OpenAI/Gemini clients) via uv, pipx or pip |
 | `graphify: update all targets` | rebuilds every directory in `targets.txt` |
 | `graphify: update targets changed vs origin/main` | rebuilds only directories with changes on your branch |
 | `graphify: update one directory…` | prompts for a directory and mode |
@@ -288,7 +288,8 @@ To try it:
 | `query` exits 4 (`No matching nodes found`) | Use symbol, file or concept names, not whole sentences. |
 | `query` exits 3 | The name is ambiguous. Use one of the listed candidates. |
 | Workflow can't push | `main` is protected. See step 2. |
-| `full` target built as code-only | No API key secret is visible to the run. Fork PRs never get one. |
+| `full` target built as code-only | No API key secret is visible to the run. Fork PRs never get one, and run with `GRAPHIFY_BACKEND=none`. |
+| `the 'anthropic' package is required for this backend` | Install the matching extra: `pipx install --force "graphifyy[mcp,anthropic,openai,gemini]"`. |
 | Graph shrank after deleting files and the update was refused | Rebuild with `GRAPHIFY_FORCE=1`, e.g. `GRAPHIFY_FORCE=1 bash .github/graphify/update.sh <dir>`. |
 
 ## References

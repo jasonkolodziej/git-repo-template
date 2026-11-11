@@ -15,7 +15,7 @@
       // Installs the graphify CLI (`graphify`) and MCP server (`graphify-mcp`).
       "label": "graphify: install CLI",
       "type": "shell",
-      "command": "if command -v uv >/dev/null; then uv tool install --upgrade 'graphifyy[mcp,watch]'; elif command -v pipx >/dev/null; then pipx install --force 'graphifyy[mcp,watch]'; else python3 -m pip install --user --upgrade 'graphifyy[mcp,watch]'; fi",
+      "command": "if command -v uv >/dev/null; then uv tool install --upgrade 'graphifyy[mcp,watch,anthropic,openai,gemini]'; elif command -v pipx >/dev/null; then pipx install --force 'graphifyy[mcp,watch,anthropic,openai,gemini]'; else python3 -m pip install --user --upgrade 'graphifyy[mcp,watch,anthropic,openai,gemini]'; fi",
       "problemMatcher": []
     },
     {
