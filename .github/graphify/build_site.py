@@ -20,7 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 TARGETS_FILE = Path(".github/graphify/targets.txt")
-# Files and folders copied from each <dir>/graphify-out/ when present.
+ROOT_OUT = Path("graphify-out")
+# Files and folders copied from the root graphify-out/ when present.
 PUBLISHED_FILES = ("graph.json", "GRAPH_REPORT.md", "graph.html", "GRAPH_TREE.html")
 PUBLISHED_DIRS = ("wiki",)
 # Written into every site this script builds; only marked directories are ever replaced.
@@ -50,34 +51,30 @@ def read_targets() -> list[str]:
     return targets
 
 
-def slug_for(target: str) -> str:
-    return "_root" if target == "." else target
-
-
-def copy_graph(target: str, site: Path) -> dict | None:
-    source = Path(target) / "graphify-out"
-    if not (source / "graph.json").is_file():
-        print(f"skip {target}: no {source}/graph.json yet (run .github/graphify/update.sh {target})")
+def copy_graph(site: Path, targets: list[str]) -> dict | None:
+    if not (ROOT_OUT / "graph.json").is_file():
+        print(f"skip: no {ROOT_OUT}/graph.json yet (run .github/graphify/update.sh)")
         return None
 
-    dest = site / "graphs" / slug_for(target)
+    dest = site / "graph"
     dest.mkdir(parents=True, exist_ok=True)
-    entry: dict = {"directory": target}
+    entry: dict = {"directories": targets}
     for name in PUBLISHED_FILES:
-        if (source / name).is_file():
-            shutil.copy2(source / name, dest / name)
-            entry[name] = f"graphs/{slug_for(target)}/{name}"
+        if (ROOT_OUT / name).is_file():
+            shutil.copy2(ROOT_OUT / name, dest / name)
+            entry[name] = f"graph/{name}"
     for name in PUBLISHED_DIRS:
-        if (source / name).is_dir():
-            shutil.copytree(source / name, dest / name, dirs_exist_ok=True)
-            entry[name] = f"graphs/{slug_for(target)}/{name}/index.md"
-    print(f"published {target} -> {dest}")
+        if (ROOT_OUT / name).is_dir():
+            shutil.copytree(ROOT_OUT / name, dest / name, dirs_exist_ok=True)
+            entry[name] = f"graph/{name}/index.md"
+    print(f"published {ROOT_OUT}/ -> {dest}")
     return entry
 
 
 def write_index(site: Path, graphs: list[dict], meta: dict) -> None:
     rows = []
     for g in graphs:
+        dirs = ", ".join(f"<code>{html.escape(d)}/</code>" for d in g["directories"])
         links = [
             f'<a href="{html.escape(g[key])}">{label}</a>'
             for key, label in (
@@ -88,9 +85,9 @@ def write_index(site: Path, graphs: list[dict], meta: dict) -> None:
             )
             if key in g
         ]
-        rows.append(f"<li><code>{html.escape(g['directory'])}/</code> · {' · '.join(links)}</li>")
-    body = "\n".join(rows) or "<li>No graphs have been built yet.</li>"
-    title = html.escape(f"{meta['repository']} knowledge graphs")
+        rows.append(f"<li>{' · '.join(links)}<br><small>covers {dirs}</small></li>")
+    body = "\n".join(rows) or "<li>No graph has been built yet.</li>"
+    title = html.escape(f"{meta['repository']} knowledge graph")
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -114,8 +111,8 @@ from commit <code>{html.escape(meta['commit'][:12])}</code> on {html.escape(meta
 {body}
 </ul>
 <p><small>Machine-readable index: <a href="graphs.json">graphs.json</a> ·
-agent summary: <a href="llms.txt">llms.txt</a>. This site is static: to query a graph over MCP,
-download its <code>graph.json</code> and run <code>graphify-mcp</code> locally.</small></p>
+agent summary: <a href="llms.txt">llms.txt</a>. This site is static: to query the graph over MCP,
+download <code>graph.json</code> and run <code>graphify-mcp</code> locally.</small></p>
 </body>
 </html>
 """
@@ -124,19 +121,21 @@ download its <code>graph.json</code> and run <code>graphify-mcp</code> locally.<
 
 def write_llms_txt(site: Path, graphs: list[dict], meta: dict) -> None:
     lines = [
-        f"# {meta['repository']} knowledge graphs",
+        f"# {meta['repository']} knowledge graph",
         "",
-        "> graphify knowledge graphs for selected directories of this repository. Read a",
+        "> graphify knowledge graph of selected directories of this repository. Read",
         "> GRAPH_REPORT.md for an architecture overview; load graph.json into `graphify-mcp`",
         "> or `graphify query --graph <file>` for scoped questions.",
         "",
-        "## Graphs",
+        "## Graph",
         "",
     ]
     for g in graphs:
+        lines.append(f"Covers: {', '.join(d + '/' for d in g['directories'])}")
+        lines.append("")
         if "GRAPH_REPORT.md" in g:
-            lines.append(f"- [{g['directory']}/ report]({g['GRAPH_REPORT.md']}): architecture summary")
-        lines.append(f"- [{g['directory']}/ graph.json]({g['graph.json']}): full graph")
+            lines.append(f"- [Report]({g['GRAPH_REPORT.md']}): architecture summary")
+        lines.append(f"- [graph.json]({g['graph.json']}): full graph")
     (site / "llms.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -174,12 +173,13 @@ def main() -> int:
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     }
 
-    graphs = [g for t in read_targets() if (g := copy_graph(t, site))]
+    graph = copy_graph(site, read_targets())
+    graphs = [graph] if graph else []
     (site / "graphs.json").write_text(json.dumps({**meta, "graphs": graphs}, indent=2) + "\n", encoding="utf-8")
     write_index(site, graphs, meta)
     write_llms_txt(site, graphs, meta)
     (site / ".nojekyll").touch()
-    print(f"site written to {site}/ ({len(graphs)} graph(s))")
+    print(f"site written to {site}/ ({'with' if graphs else 'without'} a graph)")
     return 0
 
 

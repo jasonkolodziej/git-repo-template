@@ -1,7 +1,8 @@
 name: Graphify
 
-# Keeps the graphify knowledge graphs in <dir>/graphify-out/ current for every directory
-# listed in .github/graphify/targets.txt. See GRAPHIFY.md for setup and options.
+# Keeps the repository's graphify knowledge graph in ./graphify-out/ current. The graph covers
+# every directory listed in .github/graphify/targets.txt (several targets are built into
+# <dir>/graphify-out/ and merged). See GRAPHIFY.md for setup and options.
 #
 #   push to main       rebuild only the targets whose files changed, commit the result
 #   pull_request       rebuild changed targets and upload them as an artifact (no commit)
@@ -113,6 +114,15 @@ jobs:
           read -r -a dirs <<<"${INPUT_TARGETS:-}"
 
           bash .github/graphify/update.sh "${args[@]}" "${dirs[@]}"
+
+      # Uses graphify's default location (no --graph), as agents and MCP clients will.
+      - name: Smoke-test the root graph
+        run: |
+          if [ ! -f graphify-out/graph.json ]; then
+            echo "No graphify-out/graph.json (no targets configured?): skipping."
+            exit 0
+          fi
+          graphify god-nodes --top 5
 
       - name: Upload graphs for review
         if: github.event_name == 'pull_request'

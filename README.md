@@ -15,9 +15,9 @@ The default GitHub Actions workflow in `.github/workflows/ci.yml` runs:
 
 ## Knowledge Graphs (graphify)
 
-Selected directories are indexed into [graphify](https://github.com/Graphify-Labs/graphify) knowledge graphs
-(`<dir>/graphify-out/`) that Claude Code and GitHub Copilot (VS Code and cloud agent) query over MCP or the CLI,
-instead of grepping the whole tree. The graphs are rebuilt by `.github/workflows/graphify.yml` or by the
+Selected directories are indexed into a [graphify](https://github.com/Graphify-Labs/graphify) knowledge graph
+(`graphify-out/` at the repository root) that Claude Code and GitHub Copilot (VS Code and cloud agent) query over MCP
+or the CLI, instead of grepping the whole tree. It is rebuilt by `.github/workflows/graphify.yml` or by the
 `graphify: …` VS Code tasks.
 
 **After creating a repo from this template, follow [GRAPHIFY.md](GRAPHIFY.md).**

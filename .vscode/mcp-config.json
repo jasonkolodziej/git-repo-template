@@ -44,10 +44,10 @@
       "tools": ["*"],
       "url": "https://mcp.deepwiki.com/mcp"
     },
-    "graphify-skills": {
+    "graphify": {
       "type": "local",
       "command": "graphify-mcp",
-      "args": ["skills/graphify-out/graph.json"],
+      "args": ["graphify-out/graph.json"],
       "tools": ["*"]
     }
   }

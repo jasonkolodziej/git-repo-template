@@ -5,33 +5,45 @@ knowledge graph of selected directories. The agents covered are Claude Code (loc
 Copilot Chat in VS Code, and the Copilot cloud agent on github.com. Agents query a scoped subgraph instead of
 grepping and reading many files, which saves tokens and surfaces how files relate.
 
-Each directory in [`.github/graphify/targets.txt`](.github/graphify/targets.txt) gets its own graph:
+The graph lives in `graphify-out/` at the repository root, the location graphify's own tools expect, so
+`graphify query`, `graphify-mcp`, graphify's agent hooks and the `/graphify` skill all work without a `--graph`
+flag. It covers only the directories listed in [`.github/graphify/targets.txt`](.github/graphify/targets.txt):
 
 ```text
-<dir>/graphify-out/
+graphify-out/
 ├── graph.json        # the graph: read by `graphify query` and the MCP server (committed)
 ├── GRAPH_REPORT.md   # plain-language architecture summary (committed)
 ├── graph.html        # interactive visualization (committed)
+├── manifest.json     # what was extracted, so later builds stay incremental (committed)
 └── cache/            # extraction cache (git-ignored)
 ```
 
-In this template repository the test target is `skills/`.
+How the targets become one graph:
+
+- **One target:** `graphify extract <dir> --out .` scans that directory and writes straight to `./graphify-out/`.
+- **Several targets:** each is built into its own `<dir>/graphify-out/` (committed, so unchanged targets don't need
+  rebuilding), then `graphify merge-graphs` combines them into `./graphify-out/graph.json` and `cluster-only`
+  writes the report. Node ids in a merged graph are prefixed with `<dir>::`.
+
+Either way, node `source_file` paths are relative to the target directory, not the repository root.
+
+In this template repository the only target is `skills/`.
 
 ## What the template ships
 
 | File | Purpose |
 | --- | --- |
 | `.github/graphify/targets.txt` | Directories to graph, with an optional per-directory mode (`code-only` / `full`) |
-| `.github/graphify/update.sh` | Rebuilds all, selected, or only changed targets. Used by VS Code and CI |
-| `.github/graphify/build_site.py` | Builds a static GitHub Pages site from the graphs |
-| `.github/workflows/graphify.yml` | Rebuilds graphs on push to `main` (changed dirs only) and on PRs; manual runs; optional Pages publish |
+| `.github/graphify/update.sh` | Rebuilds the root graph from all, selected, or only changed targets. Used by VS Code and CI |
+| `.github/graphify/build_site.py` | Builds a static GitHub Pages site from the graph |
+| `.github/workflows/graphify.yml` | Rebuilds the graph on push to `main` (when a target changed) and on PRs; manual runs; optional Pages publish |
 | `.github/workflows/copilot-setup-steps.yml` | Installs graphify for the Copilot cloud agent |
 | `.github/instructions/graphify.instructions.md` | Agent rules: query the graph first. Read by Copilot (VS Code and cloud) and imported by `CLAUDE.md` |
 | `CLAUDE.md` | Imports the shared Copilot instructions and graphify rules for Claude Code |
-| `.mcp.json` | Claude Code project MCP server (`graphify-skills`) |
-| `.vscode/mcp.json` | VS Code / Copilot Chat MCP server (`graphify-skills`) |
+| `.mcp.json` | Claude Code project MCP server (`graphify`) |
+| `.vscode/mcp.json` | VS Code / Copilot Chat MCP server (`graphify`) |
 | `.vscode/mcp-config.json` | MCP JSON to paste into the Copilot cloud agent settings |
-| `.vscode/tasks.json` | `graphify: …` tasks for manual updates, queries, watch mode and a local MCP HTTP server |
+| `.vscode/tasks.json` | `graphify: …` tasks for manual rebuilds, queries and a local MCP HTTP server |
 | `.graphifyignore` | Paths graphify skips (e.g. the vendored graphify skill source in `.agents/`) |
 
 ## After creating a repository from this template
@@ -39,7 +51,7 @@ In this template repository the test target is `skills/`.
 Work through this checklist once. The one-time `setup.yml` workflow renames the repo but does not touch
 graphify.
 
-### 1. Choose the directories to graph
+### 1. Choose the directories to include
 
 Edit `.github/graphify/targets.txt`. Use one line per directory, with the mode as an optional second column:
 
@@ -57,8 +69,9 @@ skills         full
   back to `code-only` with a warning.
 - **`.`** graphs the whole repository. Check `.graphifyignore` first.
 
-Keep `skills` if you kept the bundled skills, or remove the line if you deleted them. To stop tracking a
-directory, remove its line and delete `<dir>/graphify-out/`.
+Keep `skills` if you kept the bundled skills, or remove the line if you deleted them. The next build after a
+change to `targets.txt` rebuilds the whole graph. When you go from several targets back to one, delete the
+`<dir>/graphify-out/` folders the merge no longer uses (the build warns about them).
 
 ### 2. Configure the GitHub Action
 
@@ -76,10 +89,10 @@ The workflow commits graph updates back to `main` as `github-actions[bot]`. If `
 GitHub Actions to bypass the rule. If you can't, change the commit step to open a pull request instead (for
 example with `peter-evans/create-pull-request`).
 
-### 3. Build the first graphs
+### 3. Build the first graph
 
-Either run **Actions → Graphify → Run workflow** (leave *targets* blank to build every directory), or build
-locally and commit the result:
+Either run **Actions → Graphify → Run workflow** (leave *targets* blank), or build locally and commit the
+result:
 
 ```bash
 pipx install "graphifyy[mcp,anthropic,openai,gemini]"
@@ -93,37 +106,29 @@ The script supports macOS's bundled Bash 3.2 and newer Bash versions. Run it dir
 an explicit `zsh .github/graphify/update.sh` invocation automatically hands off to Bash.
 
 ```bash
-git add -- '*graphify-out/*' && git commit -m "chore(graphify): initial knowledge graphs"
+git add -- '*graphify-out/*' && git commit -m "chore(graphify): initial knowledge graph"
 ```
 
-### 4. Register one MCP server per graphed directory
+### 4. Enable the Copilot cloud agent's MCP server
 
-`graphify-mcp` serves a single `graph.json`, so add one entry per target. Name them `graphify-<dir>`, and
-copy the `graphify-skills` entry in each of these files:
-
-- **VS Code / Copilot Chat:** `.vscode/mcp.json`, using `${workspaceFolder}/<dir>/graphify-out/graph.json`.
-- **Claude Code:** `.mcp.json`, using a path relative to the repo root. Alternatively, run
-  `claude mcp add --transport stdio graphify-<dir> -- graphify-mcp "$PWD/<dir>/graphify-out/graph.json"`.
-- **Copilot cloud agent:** paste the `mcpServers` object from `.vscode/mcp-config.json` into
-  **Settings → Copilot → Coding agent → MCP configuration**. `copilot-setup-steps.yml` already installs
-  `graphify-mcp` on the agent's runner.
-
-If you have many directories, you can instead merge them into one graph with
-`graphify merge-graphs a/graphify-out/graph.json b/graphify-out/graph.json --out graphify-out/merged-graph.json`
-and serve that file.
+VS Code (`.vscode/mcp.json`) and Claude Code (`.mcp.json`) already declare one `graphify` server for
+`graphify-out/graph.json`, however many targets you have. The Copilot cloud agent reads its MCP config from
+repository settings instead: paste the `mcpServers` object from `.vscode/mcp-config.json` into
+**Settings → Copilot → Coding agent → MCP configuration**. `copilot-setup-steps.yml` already installs
+`graphify-mcp` on the agent's runner.
 
 ### 5. Point the agent rules at your directories
 
-Update the "Currently graphed" line in `.github/instructions/graphify.instructions.md`. `CLAUDE.md` imports
-this file, so Claude Code and Copilot read the same rules.
+Update the "currently `skills/`" note in `.github/instructions/graphify.instructions.md`, including the
+`source_file` example. `CLAUDE.md` imports this file, so Claude Code and Copilot read the same rules.
 
-### 6. Optional: publish graphs to GitHub Pages
+### 6. Optional: publish the graph to GitHub Pages
 
 1. **Settings → Pages → Build and deployment → Source:** select **GitHub Actions**.
 2. Set the `GRAPHIFY_PAGES` variable to `true`, or tick *publish-pages* on a manual run.
 
-The site contains `index.html` (links to each `graph.html`), `graphs.json` (a machine-readable index),
-`llms.txt`, and a copy of every `graph.json` and `GRAPH_REPORT.md`. See
+The site contains `index.html` (links to `graph.html`), `graphs.json` (a machine-readable index), `llms.txt`,
+and a copy of `graph.json` and `GRAPH_REPORT.md` under `graph/`. See
 [Hosting an MCP server via GitHub Pages](#hosting-an-mcp-server-via-github-pages) for what Pages can and
 cannot do.
 
@@ -132,7 +137,7 @@ cannot do.
 > structure and symbol names. Only enable Pages for public repositories, or on GitHub Enterprise Cloud with
 > private Pages.
 
-## Keeping graphs up to date
+## Keeping the graph up to date
 
 ### Manually in VS Code
 
@@ -141,11 +146,10 @@ Open **Terminal → Run Task…** and pick:
 | Task | What it does |
 | --- | --- |
 | `graphify: install CLI` | installs `graphify` + `graphify-mcp` (with watch mode and the Anthropic/OpenAI/Gemini clients) via uv, pipx or pip |
-| `graphify: update all targets` | rebuilds every directory in `targets.txt` |
-| `graphify: update targets changed vs origin/main` | rebuilds only directories with changes on your branch |
-| `graphify: update one directory…` | prompts for a directory and mode |
-| `graphify: query…` | runs `graphify query` against one directory's graph |
-| `graphify: watch directory (auto-rebuild code)` | `graphify watch <dir>` (needs the `watch` extra) |
+| `graphify: rebuild graph (all targets)` | rebuilds `graphify-out/` from every directory in `targets.txt` |
+| `graphify: update targets changed vs origin/main` | rebuilds only targets with changes on your branch |
+| `graphify: rebuild one target…` | prompts for a target directory and mode |
+| `graphify: query…` | runs `graphify query` against the graph |
 | `graphify: serve MCP over HTTP (localhost:8099)` | Streamable HTTP MCP endpoint at `http://127.0.0.1:8099/mcp` |
 | `graphify: build Pages site locally (_site/)` | previews what the Pages job would publish |
 
@@ -159,36 +163,40 @@ bash .github/graphify/update.sh --help
 
 `.github/workflows/graphify.yml` runs on these events:
 
-- **Push to `main`:** diffs the push and rebuilds only the targets with changed files. A change to
-  `targets.txt` rebuilds every target. It then commits changed `graphify-out/` files with `[skip ci]`.
-  Commits that only touch `graphify-out/` don't trigger it.
-- **Pull request:** rebuilds changed targets and uploads them as the `graphify-out` artifact for review.
+- **Push to `main`:** diffs the push and rebuilds when a target has changed files. A change to `targets.txt`,
+  an ignore file, or a missing `graphify-out/graph.json` rebuilds everything. It smoke-tests the result with
+  `graphify god-nodes` (no `--graph`), then commits changed `graphify-out/` files with `[skip ci]`. Commits that
+  only touch `graphify-out/` don't trigger it.
+- **Pull request:** rebuilds when a target changed and uploads the result as the `graphify-out` artifact.
   Nothing is committed. Runs from forks get no secrets, so they always use `code-only`.
-- **Manual run:** builds the directories you list (or all of them) with an optional mode override, and can
+- **Manual run:** rebuilds the targets you list (or all of them) with an optional mode override, and can
   publish to Pages.
 
 ### Locally on every commit (optional)
 
-`graphify hook install` only rebuilds a graph at the **repository root** (`./graphify-out/`). For
-per-directory graphs, use a small post-commit hook instead:
+Use a small post-commit hook that calls the update script, so only the configured targets are rebuilt:
 
 ```bash
 printf '#!/bin/sh\nbash .github/graphify/update.sh --code-only --changed HEAD~1 >/dev/null 2>&1 &\n' > .git/hooks/post-commit && chmod +x .git/hooks/post-commit
 ```
 
-If your only target is `.`, the built-in hooks work. Run `graphify hook install` and check the result with
-`graphify hook status`.
+Avoid `graphify hook install` unless your only target is `.`. Its hooks rescan the directory recorded in
+`graphify-out/.graphify_root`, which is machine-local and git-ignored. On a fresh clone that has not been built
+locally they fall back to the whole repository, and with several targets they would overwrite the merged graph.
+For the same reason, don't run a bare `graphify update .` here.
 
 ## Using the graph from each agent
 
 ### Claude Code (CLI, desktop, VS Code extension)
 
-- `CLAUDE.md` imports the graphify rules, and `.mcp.json` declares `graphify-skills`. Approve the server the
-  first time Claude Code asks.
+- `CLAUDE.md` imports the graphify rules, and `.mcp.json` declares `graphify`. Approve the server the first
+  time Claude Code asks.
 - **Optional:** run `graphify claude install` for PreToolUse hooks that nudge Claude to query the graph before
-  it greps or reads files. Use `graphify install --project --strict` to block the first raw read until a query
-  has run. These hooks write **absolute paths** into `.claude/settings.json`, so keep them in
-  `.claude/settings.local.json` rather than committing them.
+  it greps or reads files; they find `graphify-out/graph.json` at the root automatically. Use
+  `graphify install --project --strict` to block the first raw read until a query has run. These hooks write
+  **absolute paths** into `.claude/settings.json`, so keep them in `.claude/settings.local.json` rather than
+  committing them. The `## graphify` section it adds to `CLAUDE.md` says to run `graphify update .`: change that
+  line to `bash .github/graphify/update.sh --changed HEAD`.
 - **Optional:** run `graphify install` to add the `/graphify` skill to `~/.claude/skills/`.
 
 ### Claude Code on the web (cloud sessions)
@@ -199,14 +207,14 @@ The container doesn't include graphify. Add this to the environment's setup scri
 pip install "graphifyy[mcp]"
 ```
 
-The committed graphs are then available as soon as the session starts. Without the CLI, Claude follows the
+The committed graph is then available as soon as the session starts. Without the CLI, Claude follows the
 fallback rule and reads `GRAPH_REPORT.md`.
 
 ### GitHub Copilot Chat in VS Code
 
 - `chat.instructionsFilesLocations` in `.vscode/settings.json` loads `.github/instructions/`, so the graphify
   rules apply automatically.
-- `.vscode/mcp.json` starts `graphify-skills`. With `chat.mcp.autostart`, it starts once `graphify-mcp` is
+- `.vscode/mcp.json` starts `graphify`. With `chat.mcp.autostart`, it starts once `graphify-mcp` is
   installed. Run the **graphify: install CLI** task first.
 - **Optional:** run `graphify vscode install` to add the `/graphify` chat skill to your user profile.
 
@@ -240,7 +248,7 @@ full list. Most of them write `AGENTS.md`.
 
 | Option | How | Trade-offs |
 | --- | --- | --- |
-| **A. Static graphs on Pages + local stdio server** (shipped) | The workflow publishes `graphs/<dir>/graph.json`. Download it and run `graphify-mcp` locally (example below). | Free, no infra. Every agent still runs its own process. The graph is public. |
+| **A. Static graph on Pages + local stdio server** (shipped) | The workflow publishes `graph/graph.json`. Download it and run `graphify-mcp` locally (example below). | Free, no infra. Every agent still runs its own process. The graph is public. |
 | **B. Pages as a read-only "API" for agents with web access** (shipped) | Agents fetch `llms.txt`, `graphs.json` and `GRAPH_REPORT.md` over HTTPS. | No MCP tools (no `query_graph`), just documents. Good enough for an overview. |
 | **C. Self-hosted Streamable HTTP server** | Run `graphify-mcp <graph.json> --transport http --host 0.0.0.0 --api-key "$GRAPHIFY_API_KEY"` on any container host (Docker, Cloud Run, Fly.io, Cloudflare Containers). Pull the graph from Pages or the repo on a schedule; the server reloads `graph.json` when it changes. | Real shared MCP endpoint with an API key. You run the server and should put TLS in front of it. |
 | **D. Edge function reading the Pages graph** | A Cloudflare Worker (see the `cloudflare` / `agents-sdk` skills) that implements MCP and fetches `graph.json` from Pages. | Serverless and cheap, but you reimplement graphify's query tools. |
@@ -249,24 +257,25 @@ full list. Most of them write `AGENTS.md`.
 Option A, connecting a local agent to a published graph:
 
 ```bash
-mkdir -p ~/.cache/graphify-remote && curl -fsSL "https://<owner>.github.io/<repo>/graphs/skills/graph.json" -o ~/.cache/graphify-remote/skills.json
+mkdir -p ~/.cache/graphify-remote && curl -fsSL "https://<owner>.github.io/<repo>/graph/graph.json" -o ~/.cache/graphify-remote/<repo>.json
 ```
 
 ```bash
-claude mcp add --transport stdio graphify-skills-remote -- graphify-mcp "$HOME/.cache/graphify-remote/skills.json"
+claude mcp add --transport stdio graphify-remote -- graphify-mcp "$HOME/.cache/graphify-remote/<repo>.json"
 ```
 
 Option C, smoke-testing an HTTP server locally (the same command runs in a container):
 
 ```bash
-GRAPHIFY_API_KEY="$(openssl rand -hex 32)" graphify-mcp skills/graphify-out/graph.json --transport http --port 8099
+GRAPHIFY_API_KEY="$(openssl rand -hex 32)" graphify-mcp graphify-out/graph.json --transport http --port 8099
 ```
 
 MCP clients then connect to `http://<host>:8099/mcp` and send `Authorization: Bearer <key>`.
 
 ## Testing in this template repository
 
-`skills/` is the test target, with mode `full`. It is almost entirely Markdown, so:
+`skills/` is the only target, with mode `full`, so it is built straight into `./graphify-out/`. It is almost
+entirely Markdown, so:
 
 - **Without** an LLM key, the build runs in code-only mode and only graphs the handful of `.ts`, `.sh`,
   `.json`, `.yml` and `.toml` files. That shows the pipeline works but gives a sparse graph.
@@ -277,9 +286,9 @@ MCP clients then connect to `http://<host>:8099/mcp` and send `Authorization: Be
 To try it:
 
 1. Merge to `main`, or run **Actions → Graphify → Run workflow** with *targets* = `skills`.
-2. Check that `skills/graphify-out/graph.json` and `GRAPH_REPORT.md` were committed.
-3. Run `graphify query "cloudflare workers" --graph skills/graphify-out/graph.json` locally, or ask Copilot or
-   Claude a question about the skills and confirm it uses the `graphify-skills` tools.
+2. Check that `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` were committed at the repository root.
+3. Run `graphify query "turnstile siteverify"` locally, or ask Copilot or Claude a question about the skills and
+   confirm it uses the `graphify` MCP tools.
 
 ## Troubleshooting
 
@@ -295,6 +304,9 @@ To try it:
 | `GRAPHIFY_BACKEND='…' is not a built-in backend or a configured custom provider` | Fix the name, or define the provider with `graphify provider add`. In CI there is no `~/.graphify/providers.json`: commit `.graphify/providers.json`, set `GRAPHIFY_ALLOW_LOCAL_PROVIDERS=1` in the workflow `env`, and pass the provider's `env_key` secret. |
 | `the 'anthropic' package is required for this backend` | Install the matching extra: `pipx install --force "graphifyy[mcp,anthropic,openai,gemini]"`. |
 | Graph shrank after deleting files and the update was refused | Rebuild with `GRAPHIFY_FORCE=1`, e.g. `GRAPHIFY_FORCE=1 bash .github/graphify/update.sh <dir>`. |
+| `'<dir>' is not listed in .github/graphify/targets.txt` | `update.sh` only rebuilds configured targets, because the root graph combines all of them. Add the directory first. |
+| `<dir>/graphify-out is left over …` warning | Delete that folder: it is from the multi-target or the old per-directory layout. |
+| Graph covers the whole repository unexpectedly | Someone ran `graphify update .` or a graphify git hook. Rebuild with `bash .github/graphify/update.sh`. |
 
 ## References
 

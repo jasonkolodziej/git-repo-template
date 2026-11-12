@@ -100,11 +100,11 @@
         "*"
       ]
     },
-    "graphify-skills": {
+    "graphify": {
       "type": "stdio",
       "command": "graphify-mcp",
       "args": [
-        "skills/graphify-out/graph.json"
+        "graphify-out/graph.json"
       ],
       "tools": [
         "*"

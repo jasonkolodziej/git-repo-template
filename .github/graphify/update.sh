@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Rebuild graphify knowledge graphs for the directories listed in .github/graphify/targets.txt.
+# Build the repository's graphify knowledge graph (./graphify-out/) from the directories
+# listed in .github/graphify/targets.txt.
 # Used by the VS Code tasks (manual) and by .github/workflows/graphify.yml (CI).
+#
+# One target:    graphify extract <dir> --out .   (writes ./graphify-out/ directly)
+# Several:       graphify extract <dir> per target into <dir>/graphify-out/, then
+#                graphify merge-graphs into ./graphify-out/graph.json + cluster-only .
 if [ -n "${ZSH_VERSION:-}" ]; then
     exec bash "$0" "$@"
 fi
@@ -10,11 +15,13 @@ usage() {
     cat <<'EOF'
 Usage: .github/graphify/update.sh [options] [DIR ...]
 
-Rebuild graphify knowledge graphs. Each DIR gets its own graph in DIR/graphify-out/.
-With no DIR, every target in .github/graphify/targets.txt is rebuilt.
+Rebuild the knowledge graph in ./graphify-out/ (the location graphify's own tools expect).
+With no DIR, every target in .github/graphify/targets.txt is rebuilt; a DIR must be listed there.
+With several targets each one is also kept in DIR/graphify-out/ and merged into the root graph.
 
 Options:
   --changed REF   only rebuild targets with files changed between REF and HEAD
+                  (everything is rebuilt when ./graphify-out/graph.json is missing)
   --full          also run semantic (LLM) extraction on docs/papers/images (needs an API key)
   --code-only     local AST extraction only: no API key, no network
   --no-viz        skip graph.html generation
@@ -110,6 +117,9 @@ if [[ $list_only -eq 1 ]]; then
     exit 0
 fi
 
+root_out="graphify-out"
+root_graph="$root_out/graph.json"
+
 # True when files under $1 (excluding graphify output) are in the changed-file list.
 dir_changed() {
     local dir=$1
@@ -120,17 +130,36 @@ dir_changed() {
     ' <<<"$changed_files"
 }
 
-# Build the work list: "dir<TAB>mode".
+is_target() {
+    local want=$1 dir mode
+    while IFS=$'\t' read -r dir mode; do
+        [[ $dir == "$want" ]] && return 0
+    done < <(read_targets)
+    return 1
+}
+
+# Every configured target ("dir<TAB>mode"); the root graph always covers all of them.
+all_targets=()
+while IFS= read -r entry; do
+    all_targets+=("$entry")
+done < <(read_targets)
+
+# The work list: targets selected for re-extraction.
 work=()
 if [[ ${#explicit_dirs[@]} -gt 0 ]]; then
     for d in "${explicit_dirs[@]}"; do
         d=$(normalize_dir "$d")
+        is_target "$d" || die "'$d' is not listed in $targets_file. Add it there first: the root graph combines all targets."
         work+=("$d"$'\t'"$(configured_mode_for "$d")")
     done
-else
-    while IFS= read -r entry; do
-        work+=("$entry")
-    done < <(read_targets)
+elif [[ ${#all_targets[@]} -gt 0 ]]; then
+    work=("${all_targets[@]}")
+fi
+
+if [[ -n $changed_ref && ! -f $root_graph && ${#all_targets[@]} -gt 0 ]]; then
+    echo "$root_graph does not exist yet: rebuilding every target."
+    changed_ref=""
+    work=("${all_targets[@]}")
 fi
 
 if [[ -n $changed_ref ]]; then
@@ -255,42 +284,92 @@ custom_provider_ready() {
     any_env_set $keys
 }
 
-build_one() {
-    local dir=$1 mode=$2
-    if [[ ! -d $dir ]]; then
-        warn "target '$dir' does not exist: skipped (fix $targets_file)"
-        return 1
-    fi
-    if [[ $mode == full ]] && ! have_llm_backend; then
-        warn "'$dir' wants full extraction but backend '${GRAPHIFY_BACKEND:-auto-detect}' has no usable credentials (or is 'none'): falling back to code-only."
-        mode=code-only
-    fi
-
-    local extract_args=(extract "$dir")
-    local cluster_args=(cluster-only "$dir")
-    if [[ $mode == code-only ]]; then
-        extract_args+=(--code-only)
-        cluster_args+=(--no-label)
-    fi
-    [[ $no_viz -eq 1 ]] && cluster_args+=(--no-viz)
-
-    echo "==> graphify $dir ($mode)"
-    "$graphify_bin" "${extract_args[@]}" && "$graphify_bin" "${cluster_args[@]}"
-}
-
-failed=()
-for entry in "${work[@]}"; do
-    dir=${entry%%$'\t'*}
-    mode=${entry#*$'\t'}
+# Sets $mode to the effective mode (code-only|full) for "dir<TAB>mode", applying the
+# precedence rules and the credential fallback.
+effective_mode() {
+    local dir=${1%%$'\t'*}
+    mode=${1#*$'\t'}
     mode=${forced_mode:-${mode:-${GRAPHIFY_MODE:-code-only}}}
     case $mode in
         code-only | full) ;;
         *) warn "'$dir' has unknown mode '$mode': using code-only"; mode=code-only ;;
     esac
-    build_one "$dir" "$mode" || failed+=("$dir")
-done
+    if [[ $mode == full ]] && ! have_llm_backend; then
+        warn "'$dir' wants full extraction but backend '${GRAPHIFY_BACKEND:-auto-detect}' has no usable credentials (or is 'none'): falling back to code-only."
+        mode=code-only
+    fi
+}
 
-if [[ ${#failed[@]} -gt 0 ]]; then
-    die "graphify failed for: ${failed[*]}"
+# extract <dir> [--out .] in the given mode.
+extract_target() {
+    local dir=$1 mode=$2
+    shift 2
+    if [[ ! -d $dir ]]; then
+        warn "target '$dir' does not exist (fix $targets_file)"
+        return 1
+    fi
+    local args=(extract "$dir" "$@")
+    [[ $mode == code-only ]] && args+=(--code-only)
+    echo "==> graphify extract $dir ($mode)"
+    "$graphify_bin" "${args[@]}"
+}
+
+# cluster-only on the root graph: writes GRAPH_REPORT.md and graph.html next to it.
+# Communities are only named by an LLM when at least one target was built in full mode.
+cluster_root() {
+    local label=$1
+    local args=(cluster-only . --graph "$root_graph")
+    [[ $label -eq 1 ]] || args+=(--no-label)
+    [[ $no_viz -eq 1 ]] && args+=(--no-viz)
+    echo "==> graphify cluster-only (root graph)"
+    "$graphify_bin" "${args[@]}"
+}
+
+in_work() {
+    local want=$1 entry
+    for entry in "${work[@]}"; do
+        [[ ${entry%%$'\t'*} == "$want" ]] && return 0
+    done
+    return 1
+}
+
+if [[ ${#all_targets[@]} -eq 1 ]]; then
+    # Single target: scan it, write straight to ./graphify-out/. Node source_file paths
+    # are relative to the target directory.
+    entry=${all_targets[0]}
+    dir=${entry%%$'\t'*}
+    effective_mode "$entry"
+    if [[ $dir != "." && -d $dir/$root_out ]]; then
+        warn "$dir/$root_out is left over from the multi-target or older per-directory layout and is no longer used: delete it."
+    fi
+    extract_target "$dir" "$mode" --out . || die "graphify failed for: $dir"
+    label=0
+    [[ $mode == full ]] && label=1
+    cluster_root "$label" || die "graphify cluster-only failed for the root graph"
+else
+    # Several targets: (re)build each selected one into <dir>/graphify-out/ (plus any
+    # that have never been built), then merge every target into the root graph.
+    failed=()
+    label=0
+    inputs=()
+    for entry in "${all_targets[@]}"; do
+        dir=${entry%%$'\t'*}
+        effective_mode "$entry"
+        [[ $mode == full ]] && label=1
+        if in_work "$dir" || [[ ! -f $dir/$root_out/graph.json ]]; then
+            extract_target "$dir" "$mode" || { failed+=("$dir"); continue; }
+        fi
+        inputs+=("$dir/$root_out/graph.json")
+    done
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        die "graphify failed for: ${failed[*]} (root graph not updated)"
+    fi
+    merge_args=(merge-graphs "${inputs[@]}" --out "$root_graph")
+    # Keep the previous community ids so cluster-only can reuse existing labels.
+    [[ -f $root_graph ]] && merge_args+=(--previous "$root_graph")
+    mkdir -p "$root_out"
+    echo "==> graphify merge-graphs (${#inputs[@]} targets -> $root_graph)"
+    "$graphify_bin" "${merge_args[@]}" || die "graphify merge-graphs failed"
+    cluster_root "$label" || die "graphify cluster-only failed for the root graph"
 fi
-echo "graphify: done."
+echo "graphify: done ($root_graph)."

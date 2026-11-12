@@ -1,7 +1,8 @@
-# Directories that get their own graphify knowledge graph.
+# Directories included in the repository's graphify knowledge graph (./graphify-out/).
 #
-# One directory per line, relative to the repository root. Each one is built into
-# <dir>/graphify-out/ (graph.json, GRAPH_REPORT.md, graph.html).
+# One directory per line, relative to the repository root. With one target it is built
+# straight into ./graphify-out/. With several, each is built into <dir>/graphify-out/
+# and they are merged into ./graphify-out/graph.json.
 #
 # Optional second column: extraction mode for that directory.
 #   code-only  local AST only: no API key, nothing leaves the machine (default)

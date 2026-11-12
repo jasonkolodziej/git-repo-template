@@ -19,8 +19,8 @@
       "problemMatcher": []
     },
     {
-      "label": "graphify: update all targets",
-      "detail": "Rebuild every directory in .github/graphify/targets.txt",
+      "label": "graphify: rebuild graph (all targets)",
+      "detail": "Rebuild ./graphify-out/ from every directory in .github/graphify/targets.txt",
       "type": "shell",
       "command": "bash .github/graphify/update.sh",
       "problemMatcher": []
@@ -32,7 +32,7 @@
       "problemMatcher": []
     },
     {
-      "label": "graphify: update one directory…",
+      "label": "graphify: rebuild one target…",
       "type": "shell",
       "command": "bash .github/graphify/update.sh --${input:graphifyMode} '${input:graphifyDir}'",
       "problemMatcher": []
@@ -40,21 +40,14 @@
     {
       "label": "graphify: query…",
       "type": "shell",
-      "command": "graphify query '${input:graphifyQuestion}' --graph '${input:graphifyDir}/graphify-out/graph.json'",
-      "problemMatcher": []
-    },
-    {
-      "label": "graphify: watch directory (auto-rebuild code)",
-      "type": "shell",
-      "command": "graphify watch '${input:graphifyDir}'",
-      "isBackground": true,
+      "command": "graphify query '${input:graphifyQuestion}'",
       "problemMatcher": []
     },
     {
       "label": "graphify: serve MCP over HTTP (localhost:8099)",
       "detail": "Streamable HTTP endpoint at http://127.0.0.1:8099/mcp; set GRAPHIFY_API_KEY to require a key",
       "type": "shell",
-      "command": "graphify-mcp '${input:graphifyDir}/graphify-out/graph.json' --transport http --port 8099",
+      "command": "graphify-mcp graphify-out/graph.json --transport http --port 8099",
       "isBackground": true,
       "problemMatcher": []
     },
@@ -69,7 +62,7 @@
     {
       "id": "graphifyDir",
       "type": "promptString",
-      "description": "Directory to graph (relative to the repo root; see .github/graphify/targets.txt)",
+      "description": "Target directory to rebuild (must be listed in .github/graphify/targets.txt)",
       "default": "skills"
     },
     {

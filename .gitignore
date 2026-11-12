@@ -143,9 +143,13 @@ vite.config.ts.timestamp-*
 .vite/
 .DS_Store
 
-# graphify: per-machine caches. graph.json, GRAPH_REPORT.md and graph.html in each
-# <dir>/graphify-out/ are committed so every agent and CI job shares the same graph.
+# graphify: per-machine state. graph.json, GRAPH_REPORT.md, graph.html and manifest.json in
+# graphify-out/ are committed so every agent and CI job shares the same graph.
 **/graphify-out/cache/
+# Absolute path of the scanned directory on the machine that last built (rewritten every build)
+**/graphify-out/.graphify_root
+# Per-user counter for graphify's interactive "Graphify Cloud" tip
+**/graphify-out/.cloud-cta-shown
 # Local GitHub Pages build (.github/graphify/build_site.py)
 _site/
 
