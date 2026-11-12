@@ -46,8 +46,13 @@
     },
     "graphify": {
       "type": "local",
-      "command": "graphify-mcp",
-      "args": ["graphify-out/graph.json"],
+      "command": "uvx",
+      "args": [
+        "--from",
+        "graphifyy[mcp]==0.9.97",
+        "graphify-mcp",
+        "graphify-out/graph.json"
+      ],
       "tools": ["*"]
     }
   }
